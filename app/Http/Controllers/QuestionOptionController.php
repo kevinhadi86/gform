@@ -87,9 +87,9 @@ class QuestionOptionController extends Controller
      * @param  \App\QuestionOption  $questionOption
      * @return \Illuminate\Http\Response
      */
-    public function destroy(QuestionOption $questionOption, $form_id, $option_id)
+    public function destroy(QuestionOption $questionOption, $option_id)
     {
         $option = QuestionOption::findOrFail($option_id)->delete();
-        return redirect('/form/'.$form_id.'/question');
+        return response()->json($option);
     }
 }

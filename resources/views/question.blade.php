@@ -33,26 +33,27 @@
                                         <option value="Multiple Choice">Multiple Choice</option>
                                     @endif
                                 </select>
-                                <form action="{{url('/form/'.$form->id.'/question/delete/'.$question->id)}}" method="POST">
+                                {{-- <form action="{{url('/form/'.$form->id.'/question/delete/'.$question->id)}}" method="POST">
                                     {{csrf_field()}}
                                     <input type="hidden" name="_method" value="DELETE">
                                     <input class="btn btn-danger " type="submit" value="Delete Question">
-                                </form>
+                                </form> --}}
+                                <button type="button" class="btn btn-danger" onclick="deleteQuestion({{$question->id}})">Delete</button>
                                 {{-- answer section --}}
                                 <div id="answer{{$question->id}}">
                                     @if($question->type == "Multiple Choice")
                                         <div id="choice{{$question->id}}">
                                             @foreach ($question->options as $option)
-                                                <input type="radio"><input type="text" id="option{{$option->id}}" name="option" placeholder="{{$option->option}}"
-                                                onchange="changeOption({{$option->id}},$(this).val())">
-                                                <form action="{{url('/form/'.$form->id.'/question/option/delete/'.$option->id)}}" method="POST">
-                                                    {{csrf_field()}}
-                                                    <input type="hidden" name="_method" value="DELETE">
-                                                    <input class="btn btn-danger " type="submit" value="Delete Option">
-                                                </form>
+                                            <div id="input{{$option->id}}">
+                                                <input type="radio"><input type="text" id="option{{$option->id}}" name="option" placeholder="{{$option->option}}" onchange="changeOption({{$option->id}},$(this).val())">
+                                                <button type="button" class="btn btn-danger" onclick="deleteOption({{$option->id}})">   Delete
+                                                </button>
                                                 <br>
+                                            </div>
                                             @endforeach
-                                            <input type="radio"><input type="text" class="new" id="{{$question->id}}" placeholder="">
+                                            <div id="newoption{{$question->id}}">
+                                                <input type="radio"><input type="text" class="new" id="{{$question->id}}" placeholder="">
+                                            </div>
                                             {{-- disini gw taro question->id biar gw bisa masukin question id ke database gw pas gw --}}
                                         </div>
                                     @elseif($question->type == "Text")
@@ -61,8 +62,9 @@
                                         </div>
                                     @endif
                                 </div>
+                                <hr>
                             </div>
-                            <hr>
+                            
                         @endforeach
                     </div>
                 </div>
@@ -79,17 +81,16 @@
 //ajax error: delete abis add opt, new abis add q, neww abis add opt    
     $(document).ready(function(){
         $('#add-question').click(function(){
+            let url = "{{url('api/form/')}}"+"/"+"{{$form->id}}"+"/question/append";
             $.ajax({
-                url: "http://localhost/KH/public/api/form/{{$form->id}}/question/append",
+                url: url,
                 type: "POST",
                 async:false,
                 success: function(data){
                     $('#question-list').append(
-                        '<div class="question" id="question'+data['id']+'">'+
-                            '<h6>'+
+                        '<div class="question" id="question'+data['id']+'">'+           
                                 '<input type="text" name="question" placeholder="'+data['question']+'" '+
                                 'onchange="changeTitle('+data['id']+',$(this).val())">'+
-                            '</h6>'+
                             '<select name="type" id="select'+data['id']+'" class="select" onchange="changeType('+data['id']+',$(this).val())">'+
                                 '<option selected disabled>'+data['type']+'</option>'+
                                 '<option value="Multiple Choice">Multiple Choice</option>'+
@@ -104,36 +105,59 @@
                 }
             });
         });
-        $('.new').on('change',function(){
+
+        $(document).on('change','.new',function(e){
+            // event.preventDefault();
             console.log($(this).attr('id'));
+            let id = $(this).attr('id');
+            let url = "{{url('api/form/')}}"+"/"+$(this).attr('id')+"/question/option";
+            $(this).removeClass("new");
             $.ajax({
-                url: "http://localhost/KH/public/api/form/"+$(this).attr('id')+"/question/option",
+                url: url,
                 type: "POST",
+                async:false,
                 data:{
                     value: $(this).val()
                 },
-                async:false,
                 success: function(data){
-                    console.log('updated');
-                    $('.new').removeClass('new');
                     alert("flag");
                     console.log('#answer'+data['question_id']);
-                    $('#answer'+data['question_id']).append(
-                        '<form action="{{url('/form/'.$form->id.'/question/option/delete/')}}" method="POST">'+
-                        //delete ini blm bener karna gw blm tau cara masukin option_id untuk didelete
-                            '{{csrf_field()}}'+
-                            '<input type="hidden" name="_method" value="DELETE">'+
-                            '<input class="btn btn-danger " type="submit" value="Delete Option">'+
-                        '</form>'+
-                        '<input type="radio"><input type="text" class="new" id="option" placeholder="">'+
-                        //disini id nya harusnya question->id, cuman ga bisa entah kenapa
-                        '<br>'
+                    console.log($('#'+id).attr('id'));
+                    $('#'+id).attr('id','option'+data['id']);
+                    console.log($('#option'+data['id']).attr('id'));
+                    $('#newoption'+id).attr('id','input'+data['id']);
+                    $('#input'+data['id']).append(
+                        '<button type="button" class="btn btn-danger" onclick="deleteOption('+data['id']+')">Delete</button>'
                     );
-
+                    $('#answer'+data['question_id']).append(
+                        '<div id="newoption'+data['id']+'">'+
+                            '<input type="radio"><input type="text" class="new" id="'+id+'"+ placeholder="">'+
+                            //disini id nya harusnya question->id, cuman ga bisa entah kenapa
+                            '<br>'+
+                        '</div>'
+                    );
                 }
             });
         });
     });
+    function deleteQuestion(id){
+        let url= "{{url('api/form/question')}}"+"/"+id+"/delete";
+        $('#question'+id).html("");
+        $.ajax({
+            url: url,
+            type: "DELETE",
+            async:false
+        })
+    }
+    function deleteOption(id){
+        let url= "{{url('api/form/question/option')}}"+"/"+id+"/delete";
+        $('#input'+id).html("");
+        $.ajax({
+            url: url,
+            type: "DELETE",
+            async:false
+        })
+    }
     function changeTitle(id,value){
 
         $.ajax({
@@ -162,7 +186,7 @@
                         '<option value="Text">Text</option>'
                     );
                     $('#answer'+id).html(
-                        '<input type="radio"><input type="text" class="new" value="" placeholder="">'
+                        '<input type="radio"><input type="text" id="'+data['id']+'" class="new" value="" placeholder="">'
                     );
                 }else if (value == "Text") {
                     $('#select'+id).html(

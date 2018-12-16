@@ -104,9 +104,9 @@ class QuestionController extends Controller
      * @param  \App\Question  $question
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Question $question, $id, $question_id)
+    public function destroy(Question $question, $question_id)
     {
         $question = Question::findOrFail($question_id)->delete();
-        return redirect('/form/'.$id.'/question');
+        return response()->json($question);
     }
 }
